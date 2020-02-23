@@ -1,0 +1,16 @@
+<head>
+  <style> body { margin: 0; } </style>
+
+  <script src="//unpkg.com/3d-force-graph"></script>
+  <script src="../../dist/3d-force-graph.js"></script>
+</head>
+
+<body>
+  <div id="3d-graph"></div>
+
+  <script>
+    $.getJSON("../datasets/d2v_20artists.json", function(json) {
+      console.log(json); // this will show the info it in firebug console
+    });
+  </script>
+</body>

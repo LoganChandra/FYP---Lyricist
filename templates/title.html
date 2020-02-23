@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Lyricist</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <!-- <link type="text/css" rel="stylesheet" href="title.css"> -->
+        <link href="https://fonts.googleapis.com/css?family=Oswald&display=swap" rel="stylesheet">
+	</head>
+	<body>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.js"></script>
+		<div id="container"></div>
+
+   <script> 
+   var text = "Lyricist",
+
+            height = 20,
+            size = 70,
+            hover = 30,
+
+            curveSegments = 4,
+
+            bevelThickness = 2,
+            bevelSize = 1.5,
+            bevelSegments = 3,
+            bevelEnabled = true,
+
+            font = 'Oswald', // helvetiker, optimer, gentilis, droid sans, droid serif
+            weight = "bold", // normal bold
+            style = "normal"; // normal italic
+   var scene = new THREE.Scene();
+   var camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+   var renderer = new THREE.WebGLRenderer(); 
+   renderer.setSize(window.innerWidth, window.innerHeight);
+   document.body.appendChild(renderer.domElement);
+   var loader = new THREE.FontLoader();
+
+    var textGeo = new THREE.TextGeometry( 'Lyricist', {
+
+        size: size,
+        height: height,
+        curveSegments: curveSegments,
+        font: 'Oswald',
+        weight: weight,
+        style: style,
+
+        bevelThickness: bevelThickness,
+        bevelSize: bevelSize,
+        bevelEnabled: bevelEnabled,
+
+        });
+
+//  var geometry = new THREE.CubeGeometry(10,10,1);
+  var material = new THREE.MeshBasicMaterial({color: 0x11ff00});
+  var textGeo = new THREE.Mesh(textGeo, material); 
+  scene.add(textGeo);
+  camera.position.z = 10;
+  function render() { 
+      requestAnimationFrame(render);
+      textGeo.rotation.x += 0.01;
+      textGeo.rotation.y += 0.01;
+      renderer.render(scene, camera); 
+ } 
+
+
+ render();
+
+
+</script>
+
+	</body>
+</html>

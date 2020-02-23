@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta http-equiv="X-UA-Compatible" content="ie=edge">
+      <title>Lyricist</title>
+        <style> body { margin: 0; } </style>
+      
+        <script src="//unpkg.com/3d-force-graph"></script>
+        <!-- <script src="../../dist/3d-force-graph.js"></script> -->
+
+      </head>
+
+      <body>
+        <div id="3d-graph"></div>
+        <input type="file"/>
+        <script>
+          const elem = document.getElementById('3d-graph');
+          
+          function creategraph(json){
+            const gData = json
+            const Graph = ForceGraph3D()
+                    (elem)
+                      .graphData(gData)
+                      .nodeLabel('name')
+                      .nodeAutoColorBy('group')
+                      // .linkVisibility(false)
+                      // .linkAutoColorBy(d => gData.nodes[d.source].group)
+                      .onNodeHover(node => elem.style.cursor = node ? 'pointer' : null)
+                      .d3Force("link", d3.forceLink().distance(d => d.distance))
+                      .d3Force("charge", d3.forceManyBody().theta(0.5).strength(-1))
+                      .onNodeClick(node => {
+                        // Aim at node from outside it
+                        const distance = 40;
+                        const distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
+
+                        Graph.cameraPosition(
+                          { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }, // new position
+                          node, // lookAt ({ x, y, z })
+                          3000  // ms transition duration
+                        );
+                      });
+            }
+        </script>
+        <script>
+
+          const input = document.querySelector('input[type="file"]')
+          input.addEventListener('change', function(e){
+            console.log(typeof input.files[0])
+            const fr = new FileReader();
+            fr.onload = function(){
+
+              json = JSON.parse(fr.result);
+              creategraph(json)
+
+            }
+            jsonobj = fr.readAsText(input.files[0])
+            
+          }, false)
+            
+            </script>
+      </body>
+</html>
+<!-- <head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Lyricist</title>
+    <link rel="stylesheet" href="css/main.css">
+    
+</head>
+<body>  
+    <script src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/102/three.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/2.1.2/TweenLite.min.js"></script>
+
+    <script>  
+        
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight,0.1,1000);
+ 
+        var renderer = new THREE.WebGLRenderer({antialias: true});
+        renderer.setClearColor("#e5e5e5");
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        document.body.appendChild(renderer.domElement); 
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth/window.innerHeight;
+
+            camera.updateProjectionMatrix();
+        })
+
+        renderer.render(scene, camera);
+
+    </script>
+</body>
+</html>
+<head>
+  <style> body { margin: 0; } </style>
+
+  <script src="//unpkg.com/3d-force-graph"></script>
+</head>
+
+<body>
+  <div id="3d-graph"></div>
+
+  <script>
+    // Random tree
+    const N = 300;
+    const gData = {
+      nodes: [...Array(N).keys()].map(i => ({ id: i })),
+      links: [...Array(N).keys()]
+        .filter(id => id)
+        .map(id => ({
+          source: id,
+          target: Math.round(Math.random() * (id-1))
+        }))
+    };
+
+    const Graph = ForceGraph3D()
+      (document.getElementById('3d-graph'))
+        .graphData(gData);
+  </script> 
+</body>-->
