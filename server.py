@@ -12,6 +12,7 @@ import random
 import tempfile
 import itertools
 import ast
+import json
 import tensorflow as tf
 import tensorflow.compat.v1 as tensf
 tensf.disable_v2_behavior()
@@ -43,12 +44,49 @@ global model, seq_l, num_songs, genre_file
 SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
 check = ['Pop', 'Hip-Hop', 'Rock', 'Metal', 'Country', 'Jazz', 'Electronic', 'Folk', 'R&B', 'Indie']
 sim_artist_d2v_path = os.path.join(SITE_ROOT, "model\D2V", "d2v_final.model")
+d2v_model = Doc2Vec.load(sim_artist_d2v_path)
 master_csv_path = os.path.join(SITE_ROOT, "model\Lyric Generation\lyric data", "SongLyrics_Final.csv")
+master_csv = pd.read_csv(master_csv_path)
 master_csv_no_stopwords = pd.read_csv(os.path.join(SITE_ROOT, "model\Lyric Generation\lyric data", "SongLyrics_Final_list.csv"))
+d2v_path = os.path.join(SITE_ROOT, "model\D2V", "d2v_20artists_3dfg.json")
+
+with open(d2v_path) as json_file:
+    d2v_3dgf_model = json.load(json_file)
 
 seq_l = int()
 num_songs = int()
 genre_file = str()
+class artist_by_genre(dict): 
+  
+    # __init__ function 
+    def __init__(self): 
+        self = dict() 
+          
+    # Function to add key:value 
+    def add(self, key, value): 
+        self[key] = value 
+  
+# Main Function 
+ag_dict = artist_by_genre() 
+
+genre_list = master_csv.genre.unique().tolist()
+artist_list = []
+for genre in genre_list:
+  df_genre = master_csv[master_csv['genre'] == str(genre)]
+  top_artists = df_genre.groupby('artist').size().sort_values(ascending = False).keys().tolist()
+
+  temp_list = [artist for artist in top_artists]#[:no_of_artist]
+  artist_list.append(temp_list)
+  ag_dict.add(str(genre), temp_list)
+
+def getGenre(artist):
+  res = 'not found'
+  for g, a in ag_dict.items():
+    for ele in a:
+      if str(ele) == artist:
+        # print(res)
+        res = g
+  return res
 
 def shorten(s):
     return s.translate(str.maketrans('', '', string.punctuation)).lower().replace(" ", "")
@@ -58,7 +96,7 @@ def load_model_details(file_str):
   global seq_l, num_songs, genre_file, check
 
   extract = re.search(r'([^(\\|\/)]*)(\\|\/)*$', file_str)[0]
-  seq_l = int(re.search(r'(?<=songs_).*?(?=sl)', extract)[0])  
+  seq_l = int(re.search(r'(?<=songs_).*?(?=sl)', extract)[0])
   genre_file = check[list(map(shorten, check)).index(shorten(str(re.search(r'^[^_]+', extract)[0])))]
   num_songs = int(re.search('(?<=_).*?(?=songs_)', extract)[0])
 
@@ -166,8 +204,9 @@ def GenerateLyrics(data_file, model, n_words):
     return result.replace('endline', '\n')
 
 def checkValid(inp):
-    master_csv = pd.read_csv(master_csv_path)
+    print("Entering `checkValid`")
     out = shorten(inp) in list(map(shorten, check)) + list(map(shorten, list(master_csv.artist.unique())))
+    print("Exiting `checkValid`")
     return out
 
 def isGenre(inp):
@@ -177,75 +216,101 @@ def isArtist(inp):
     return checkValid(inp) and (not isGenre(inp))
 
 def getProperName(inp):
-    master_csv = pd.read_csv(master_csv_path)
     temp_master_csv_list = list(master_csv.artist.unique())
 
     short = shorten(inp)
-    if checkValid(short):
-        if isGenre(short):
-            return check[list(map(shorten, check)).index(shorten(short))]
-        else:   
-            return temp_master_csv_list[list(map(shorten, temp_master_csv_list)).index(shorten(short))]
-    else:
-        return
+    if isGenre(short):
+        return check[list(map(shorten, check)).index(shorten(short))]
+    else:   
+        return temp_master_csv_list[list(map(shorten, temp_master_csv_list)).index(shorten(short))]
 
 @app.route('/')
 @app.route("/main", methods=["GET", "POST"])
 def main():
     if request.method == 'GET':
-        return render_template("main.html", error = 0)
+        return render_template("main2.html", error = 0)
     ga = request.form['getsearch']
+    d2vmodel = get3dgfmodel()
+
     # TODO add top n words functionality
     # top_n
-    return redirect(url_for('explore', ga=ga))
-
-@app.route('/works', methods=['POST', 'GET'])
-def works(inp):
-    if inp == 1:
-        return "Ayyy it 1  !!"
-    else:
-        return "Ayyy it 0  !!"
-
+    return redirect(url_for('explore', ga=ga, d2vmodel = d2vmodel))
 
 @app.route('/explore', methods=['POST', 'GET'])
 def explore():
     ga = request.form.get('getsearch', 'Error hehe')
+        
     if checkValid(ga):
 
-        data = getLabelsData(100,getProperName(ga))
+        data = getLabelsData(100, getProperName(ga))
+        radarData = getRadarData(getProperName(ga))
         simAD = getSimArtistData(getProperName(ga))
-        return render_template('explore.html', ga=getProperName(ga), data=data, simAD = simAD)
+        return render_template('explore.html', ga=getProperName(ga), data=data, radarData=radarData, simAD = simAD)
 
     else:
         error = "Genre or Artist not found"
-        return render_template('main.html', error=error)
+        return render_template('main2.html', error=error)
 
 @app.route('/explorer')
-# @app.route('/getSimArtists', methods=['POST', 'GET'])
+@app.route('/getSimArtists', methods=['POST', 'GET'])
 def getSimArtistData(inp):
+    # inp = 'bbking'
+    num_artists = 5
+    if isArtist(inp):
+        similar_artists = d2v_model.docvecs.most_similar(str(getProperName(inp)), topn=num_artists)
+        query = 'https://thumbs-prod.si-cdn.com/_oO5E4sOE9Ep-qk_kuJ945_-qo4=/800x600/filters:no_upscale()/https://public-media.si-cdn.com/filer/d5/24/d5243019-e0fc-4b3c-8cdb-48e22f38bff2/istock-183380744.jpg'
+        data = {'simname': [i[0] for i in similar_artists], 'simgenre': [getGenre(i[0]) for i in similar_artists], 'simimgpath': query}
+        simartist_html = '';
+        for i in range(num_artists):
+            simartist_html += '<div class="card" style="display: inline-block;">'
+            simartist_html += '<img src="'+ data['simimgpath'] + '" class="card-img-top" alt="">'
+            simartist_html += '<div class="card-body">'
+            simartist_html += '<h5 class="card-title">' + data['simname'][i] + '</h5>'
+            simartist_html += '<p class="card-text">' + data['simgenre'][i] + '</p>'
+            simartist_html += '</div>'
+            simartist_html += '</div>'
+    return data
+
+@app.route('/explore')
+@app.route('/getRadarData', methods=['POST', 'GET'])
+def getRadarData(inp):
+    # inp = 'beyonce'
     if isArtist(inp):
         d2v_model = Doc2Vec.load(sim_artist_d2v_path)
-        similar_artists = d2v_model.docvecs.most_similar(str(getProperName(inp)), topn=10)
-        query = 'https://thumbs-prod.si-cdn.com/_oO5E4sOE9Ep-qk_kuJ945_-qo4=/800x600/filters:no_upscale()/https://public-media.si-cdn.com/filer/d5/24/d5243019-e0fc-4b3c-8cdb-48e22f38bff2/istock-183380744.jpg'
-        data = jsonify({'simname': [i[0] for i in similar_artists], 'simgenre': [i[0] for i in similar_artists], 'simimgpath': query})
-    return data
+        data = [d2v_model.docvecs.n_similarity([inp], master_csv[master_csv['genre'] == genre]['artist'].tolist())*100 for genre in check]
+        return {'artistname': inp, 'labels' : check, 'datasets' : [{'data' : data}]}
+    else:
+        return False
+
+@app.route('/getRadarAddData', methods=['POST'])
+def getRadarAddData():
+    if request.json['token'] == 1:
+        inp = request.json['artistname']
+    # inp = 'beyonce'
+    if isArtist(inp):
+        d2v_model = Doc2Vec.load(sim_artist_d2v_path)
+        data = [d2v_model.docvecs.n_similarity([inp], master_csv[master_csv['genre'] == genre]['artist'].tolist())*100 for genre in check]
+        return {'artistname': inp, 'labels' : check, 'datasets' : [{'data' : data}]}
+    else:
+        return False
 
 @app.route('/explore')
 @app.route('/getLabelsData', methods=['POST', 'GET'])
 def getLabelsData(most_c, inp):
-    if checkValid(inp):
-        master_csv = pd.read_csv(master_csv_path)
 
-        if isGenre(inp):
-            genre_csv = master_csv_no_stopwords[master_csv_no_stopwords['genre'] == getProperName(inp)]
-        else:
-            genre_csv = master_csv_no_stopwords[master_csv_no_stopwords['artist'] == getProperName(inp)]
-        
-        genre = [ast.literal_eval(ele) for ele in genre_csv['lyrics'].tolist()]
-        temp = Counter(list(itertools.chain.from_iterable(genre))).most_common(most_c)
-        # res = [merge_list + i for i in genre_csv['lyrics'].tolist()]
-        
-        return {'labels' : [i[0] for i in temp], 'data' : [i[1] for i in temp]}
+    if isGenre(inp):
+        genre_csv = master_csv_no_stopwords[master_csv_no_stopwords['genre'] == getProperName(inp)]
+    else:
+        genre_csv = master_csv_no_stopwords[master_csv_no_stopwords['artist'] == getProperName(inp)]
+    
+    genre = [ast.literal_eval(ele) for ele in genre_csv['lyrics'].tolist()]
+    temp = Counter(list(itertools.chain.from_iterable(genre))).most_common(most_c)
+    
+    return {'artistname': inp,'labels' : [i[0] for i in temp], 'data' : [i[1] for i in temp]}
+
+@app.route("/get3dgfmodel", methods=["GET", "POST"])
+def get3dgfmodel():
+    return str(d2v_3dgf_model)
 
 @app.route("/loadmodel/", methods=["GET", "POST"])
 def loadmodel():
@@ -291,8 +356,9 @@ def generate():
     model_f = os.path.join(SITE_ROOT, "model\Lyric Generation\json_h5", "Country_500songs_5sl_100_100_100_vsize.h5")
     data_f = os.path.join(SITE_ROOT, "static\datasets\Lyric Generation\lyric data\Lyrics_by_genre", "Country.csv")
     model = tf.keras.models.load_model(model_f, compile=False)
-    # return GenerateLyrics(data_f, model_f, 100)
+    # return GenerateLyrics(data_f, model_f, 100) 
+
     return model
 
 if __name__ == "__main__":
-    app.run(debug = True, host="0.0.0.0", port = 8080)
+    app.run(debug = True, host="0.0.0.0", port = 8080) 
