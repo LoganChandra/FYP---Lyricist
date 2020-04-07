@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+    <script src="https://www.chartjs.org/samples/latest/utils.js" type="text/javascript"></script>
+    <script async="" src="//www.google-analytics.com/analytics.js"></script>
+
+    <!-- <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css"> -->
+    <link rel="stylesheet" href="{{ url_for('static',filename='vendor/bootstrap/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static',filename='css/grayscale.min.css') }}">
+
+    <!-- Custom fonts for this template -->
+    <link href="{{ url_for('static',filename='vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="{{ url_for('static',filename='vendor/jquery/jquery.min.js') }}"></script>
+    <script src="{{ url_for('static',filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+
+    <!-- Plugin JavaScript -->
+    <script src="{{ url_for('static',filename='vendor/jquery-easing/jquery.easing.min.js') }}"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="{{ url_for('static',filename='js/grayscale.min.js') }}"></script>
+    
+    <!-- Driver functions -->
+    <script src="{{ url_for('static',filename='js/driverfunctions.js') }}"></script>  
+
+
+    <script>
+      window.jQuery || document.write('<script src="/docs/4.4/assets/js/vendor/jquery.slim.min.js"><\/script>')
+    </script>
+    
+    <style>
+      /* Chart.js */
+      @-webkit-keyframes chartjs-render-animation{from{opacity:0.99}to{opacity:1}}@keyframes chartjs-render-animation{from{opacity:0.99}to{opacity:1}}.chartjs-render-monitor{-webkit-animation:chartjs-render-animation 0.001s;animation:chartjs-render-animation 0.001s;}
+    </style>
+    <title>Lyricist</title>
+    <style> body { margin: 0; } </style>
+  
+    <script src="//unpkg.com/three"></script>
+    <script src="//unpkg.com/three-spritetext"></script>
+    <script src="//unpkg.com/3d-force-graph"></script>
+    <!-- <script src="../../dist/3d-force-graph.js"></script> -->
+
+      </head>
+
+      <body>
+        <div id="3d-graph"></div>
+        <!-- <label for="myfile">Select a file:</label>
+        <input type="file" id="myfile" name="myfile"> -->
+        <script>
+          const elem = document.getElementById('3d-graph');
+          
+          function loaddata(vars){
+            return vars
+          }
+          
+          // function creategraph(json){
+            
+            const gData = loaddata({{ graphpath|tojson }});
+            console.log(gData);
+            const Graph = ForceGraph3D()
+                    (elem)
+                      .graphData(gData)
+                      .nodeLabel('name')
+                      .nodeAutoColorBy('group')
+                      // .linkVisibility(false)
+                      // .linkAutoColorBy(d => gData.nodes[d.source].group)
+                      // .d3Force("link", d3.forceLink().distance(d => d.distance))
+                      // .d3Force("charge", d3.forceManyBody().theta(0.5).strength(-1))
+                      .onNodeHover(node => elem.style.cursor = node ? 'pointer' : null)
+                      .onNodeClick(node => {                        
+                        const distance = 40;
+                        const distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
+                        // var node = gData.nodes.find(element => element.name == "beyonce-knowles");
+                        
+                        Graph.cameraPosition(
+                          { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }, // new position
+                          node, // lookAt ({ x, y, z })
+                          3000  // ms transition duration
+                        );
+                      })
+                      .linkThreeObjectExtend(true)
+                      .linkThreeObject(link => {
+                        // extend link with text sprite
+                        const sprite = new SpriteText(`${link.target}`.replace(/_id[0-9]*/g,''));
+                        sprite.color = 'lightgrey';
+                        sprite.textHeight = parseFloat(`${link.distance}`);
+                        return sprite;
+                      })
+                      .linkPositionUpdate((sprite, { start, end }) => {
+                      const middlePos = Object.assign(...['x', 'y', 'z'].map(c => ({
+                        [c]: start[c] + (end[c] - start[c]) / 2 // calc middle point
+                      })));
+
+                      // Position sprite
+                      Object.assign(sprite.position, middlePos);
+                      });
+
+                      // Spread nodes a little wider
+                      Graph.d3Force('charge').strength(-120);
+
+                      var focus_node = gData.nodes.find(element => element.name == "beyonce-knowles");
+                      // console.log(focus_node);
+                      Graph.cameraPosition(
+                        { x: focus_node.x * distRatio, y: focus_node.y * distRatio, z: focus_node.z * distRatio }, // new position
+                        focus_node, // lookAt ({ x, y, z })
+                        3000  // ms transition duration
+                      );
+            // }
+        </script>
+        <script>
+
+          const input = document.querySelector('input[type="file"]')
+          input.addEventListener('change', function(e){
+            console.log(typeof input.files[0])
+            const fr = new FileReader();
+            fr.onload = function(){
+              // console.log(String(fr.result));
+              json = JSON.parse(fr.result);
+              creategraph(json);
+
+            }
+            jsonobj = fr.readAsText(input.files[0])
+            
+          }, false)
+            
+            </script>
+      </body>
+</html>

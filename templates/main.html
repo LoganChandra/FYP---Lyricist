@@ -18,44 +18,72 @@
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
     <link rel="stylesheet" href="{{ url_for('static',filename='main.css') }}">
 
+    <!-- 3d force graph -->
+    <script src="//unpkg.com/3d-force-graph"></script>
+
     <title>Lyricist</title>
   </head>
-  <body>
     <body class="text-center" data-gr-c-s-loaded="true">
-    <div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
-      <header class="masthead mb-auto">
+      <!-- <div class="split left">   
+    <div class="cover-container">
+      <header class="masthead">
         <div class="inner">
           <h2 class="masthead-brand">Lyricist</h2>
-          <nav class="nav nav-masthead justify-content-center">
-            <a class="nav-link" href="#">About</a>
-          </nav>
         </div>
       </header>
-    
-      <main role="main" class="inner cover w3-animate-top">
+      
+      <main role="main" class="inner cover w3-animate-top content">
         <h1 class="cover-heading">Welcome to Lyricist</h1>
         <p class="lead">Explore music from the eye of a lyricist.</p>
         <div class="input-group mb-3">
-            <div class="input-group-prepend">
-            </div>  
-            <form action="/explore" method="post">
-              <input name="getsearch" type="text" placeholder="Search for genre or artist..." class="form-control" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-lg">
+            <form action="/explore" method="post" style="width: 100%;">
+              <input name="getsearch" type="text" placeholder="Search for genre or artist..." class="form-control" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-lg ">
               <input type="submit" value="Click to begin" class="btn btn-lg btn-secondary" id="beginbutton" style="width: 100%;">
               {% if error %}
                 <p>{{ error }}</p>
               {% endif %}
             </form>
-
-            <!-- <a class="btn btn-lg btn-secondary" id="beginbutton">Click to begin</a> -->
         </div>
         <a id="result"></a>
-        </p>
       </main>
-    
-      <footer class="mastfoot mt-auto">
-      </footer>
+      <div class="background">
+        
+      </div>
     </div>
+  </div> -->
+
   </body>
+  <script>
+    
+    const elem = document.getElementById('3d-graph');
+    function loaddata(vars){
+      return vars
+    }
+
+    const gData = loaddata({{d2vmodel|tojson}})
+    const Graph = ForceGraph3D()
+            (elem)
+              .graphData(gData)
+              .nodeLabel('name')
+              .nodeAutoColorBy('group')
+              // .linkVisibility(false)
+              // .linkAutoColorBy(d => gData.nodes[d.source].group)
+              .onNodeHover(node => elem.style.cursor = node ? 'pointer' : null)
+              .d3Force("link", d3.forceLink().distance(d => d.distance))
+              .d3Force("charge", d3.forceManyBody().theta(0.5).strength(-1))
+              .onNodeClick(node => {
+                // Aim at node from outside it
+                const distance = 40;
+                const distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
+
+                Graph.cameraPosition(
+                  { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }, // new position
+                  node, // lookAt ({ x, y, z })
+                  3000  // ms transition duration
+                );
+              });
+    
+  </script>
   <script>
     var searchitem = document.getElementById("getsearch");
 

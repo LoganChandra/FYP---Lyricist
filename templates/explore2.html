@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="stylesheet" href="{{ url_for('static',filename='vendor/bootstrap/css/bootstrap.min.css') }}">
+  <!-- <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script> -->
+  <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+  <!-- Custom scripts for this template -->
+  <script src="{{ url_for('static',filename='js/grayscale.min.js') }}"></script>
+
+  <!-- AmChart -->
+  <script src="https://www.amcharts.com/lib/4/core.js"></script>
+  <script src="https://www.amcharts.com/lib/4/charts.js"></script>
+  <script src="https://www.amcharts.com/lib/4/plugins/wordCloud.js"></script>
+  <script src="https://www.amcharts.com/lib/4/themes/dataviz.js"></script>
+  <script src="https://www.amcharts.com/lib/4/themes/animated.js"></script>
+
+  <!-- chartjs -->
+  <script src="https://www.chartjs.org/samples/latest/utils.js" type="text/javascript"></script>
+  <script async="" src="//www.google-analytics.com/analytics.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+
+  <!-- Bootstrap core JavaScript -->
+  <script src="{{ url_for('static',filename='vendor/jquery/jquery.min.js') }}"></script>
+  <script src="{{ url_for('static',filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+
+  <!-- Plugin JavaScript -->
+  <script src="{{ url_for('static',filename='vendor/jquery-easing/jquery.easing.min.js') }}"></script>
+
+  <script>
+    window.jQuery || document.write('<script src="/docs/4.4/assets/js/vendor/jquery.slim.min.js"><\/script>')
+  </script>
+  
+  <style>
+    /* Chart.js */
+    @-webkit-keyframes chartjs-render-animation{from{opacity:0.99}to{opacity:1}}@keyframes chartjs-render-animation{from{opacity:0.99}to{opacity:1}}.chartjs-render-monitor{-webkit-animation:chartjs-render-animation 0.001s;animation:chartjs-render-animation 0.001s;}
+  </style>
+
+  <link rel="stylesheet" href="{{ url_for('static',filename='explore.css') }}">
+
+  <style>
+
+    /* Remove the navbar's default margin-bottom and rounded borders */ 
+    .navbar {
+      margin-bottom: 0;
+      border-radius: 0;
+      width: 100%;
+      position: relative;
+      z-index: 10;
+    }
+    
+    /* Set height of the grid so .sidenav can be 100% (adjust as needed) */
+    .row.content {height: 1500px}
+    
+    /* Set gray background color and 100% height */
+    .sidenav {
+      background-color: #f1f1f1;
+      height: 100%;
+      margin-top: 6%;
+      position: relative;
+    }
+    
+    /* Set black background color, white text and some padding */
+    footer {
+      background-color: #555;
+      color: white;
+      padding: 15px;
+    }
+    
+    /* On small screens, set height to 'auto' for sidenav and grid */
+    @media screen and (max-width: 767px) {
+      .sidenav {
+        height: auto;
+        padding: 15px;
+      }
+      .row.content {height:auto;} 
+      a {text-decoration: none;}
+    }
+
+    .genrebutton {
+      height: 60px;
+    }
+
+    .center {
+      padding: 20px 20px;
+      text-align: center;
+  }
+
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-light bg-light">
+    <h4 href="/main">Lyricist</h4>
+    <form class="form-inline" id='searchID'data-toggle="tooltip" title="Artist or Genre not found" action="/explore" method="post">
+        <input id="searchbar" name="getsearch" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+        <button class="btn btn-sm btn-outline-secondary type="submit" href="/explore">Search</button>
+    </form>
+    
+    <button class="btn btn-sm btn-outline-secondary type="submit" id="addArtistID" name="addartist" >Add artist</button>
+
+</nav>
+<div class="container-fluid">
+  <div class="row content">
+    <div class="col-sm-2 ml-sm-auto sidenav">
+            <div id="genrelist">
+            <div class="row align-items-center">
+              <div class="card" style="display: inline-block;">
+                <img src='https://thumbs-prod.si-cdn.com/_oO5E4sOE9Ep-qk_kuJ945_-qo4=/800x600/filters:no_upscale()/https://public-media.si-cdn.com/filer/d5/24/d5243019-e0fc-4b3c-8cdb-48e22f38bff2/istock-183380744.jpg' class="card-img-top" alt="...">
+                <div class="card-body">
+                  <h5 class="card-title">{{ simAD.simname[0] }}</h5>
+                  <p class="card-text">{{ simAD.simgenre[0] }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="w-100"></div>
+            <div class="row align-items-center">
+              <div class="card" style="display: inline-block;">
+                <img src='https://thumbs-prod.si-cdn.com/_oO5E4sOE9Ep-qk_kuJ945_-qo4=/800x600/filters:no_upscale()/https://public-media.si-cdn.com/filer/d5/24/d5243019-e0fc-4b3c-8cdb-48e22f38bff2/istock-183380744.jpg' class="card-img-top" alt="...">
+                <div class="card-body">
+                  <h5 class="card-title">{{ simAD.simname[1] }}</h5>
+                  <p class="card-text">{{ simAD.simgenre[1] }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="w-100"></div><div class="row align-items-center">
+              <div class="card" style="display: inline-block;">
+                <img src='https://thumbs-prod.si-cdn.com/_oO5E4sOE9Ep-qk_kuJ945_-qo4=/800x600/filters:no_upscale()/https://public-media.si-cdn.com/filer/d5/24/d5243019-e0fc-4b3c-8cdb-48e22f38bff2/istock-183380744.jpg' class="card-img-top" alt="...">
+                <div class="card-body">
+                  <h5 class="card-title">{{ simAD.simname[2] }}</h5>
+                  <p class="card-text">{{ simAD.simgenre[2] }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="w-100"></div><div class="row align-items-center">
+              <div class="card" style="display: inline-block;">
+                <img src='https://thumbs-prod.si-cdn.com/_oO5E4sOE9Ep-qk_kuJ945_-qo4=/800x600/filters:no_upscale()/https://public-media.si-cdn.com/filer/d5/24/d5243019-e0fc-4b3c-8cdb-48e22f38bff2/istock-183380744.jpg' class="card-img-top" alt="...">
+                <div class="card-body">
+                  <h5 class="card-title">{{ simAD.simname[3] }}</h5>
+                  <p class="card-text">{{ simAD.simgenre[3] }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="w-100"></div><div class="row align-items-center">
+              <div class="card" style="display: inline-block;">
+                <img src='https://thumbs-prod.si-cdn.com/_oO5E4sOE9Ep-qk_kuJ945_-qo4=/800x600/filters:no_upscale()/https://public-media.si-cdn.com/filer/d5/24/d5243019-e0fc-4b3c-8cdb-48e22f38bff2/istock-183380744.jpg' class="card-img-top" alt="...">
+                <div class="card-body">
+                  <h5 class="card-title">{{ simAD.simname[4] }}</h5>
+                  <p class="card-text">{{ simAD.simgenre[4] }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="w-100"></div>
+            </div>
+            
+            </div>
+            <!-- <div class="col-sm-10"> -->
+              <main role="main" class="col-md-10 ml-sm-auto col-lg-10 px-4">
+              <div class="chartjs-size-monitor" style="position: absolute; left: 0px; top: 0px; right: 0px; bottom: 0px; overflow: hidden; pointer-events: none; visibility: hidden; z-index: -1;">
+                <div class="chartjs-size-monitor-expand" style="position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;pointer-events:none;visibility:hidden;z-index:-1;">
+                  <div style="position:absolute;width:1000000px;height:1000000px;left:0;top:0"></div></div><div class="chartjs-size-monitor-shrink" style="position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;pointer-events:none;visibility:hidden;z-index:-1;"><div style="position:absolute;width:200%;height:200%;left:0; top:0"></div></div></div>
+              
+              <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <a class="h2" id="dashID" style="text-decoration: none;" href="/viewD2VG/{{ ga }}/">{{ ga }}</a>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                  <div class="btn-group mr-2">
+                    <a id="print" type="button" class="btn btn-sm btn-outline-secondary">5</a>
+                    <a id="print" type="button" class="btn btn-sm btn-outline-secondary">20</a>
+                    <a id="print" type="button" class="btn btn-sm btn-outline-secondary">50</a>
+                    <a id="print" type="button" class="btn btn-sm btn-outline-secondary">100</a>
+                  </div>
+                </div>
+              </div>
+            
+              <div class="row" style="padding: 5%;padding-top: 1%">
+                <div class="col-sm-10 col-md-6 col-lg-10">
+                  <div id="cloud" style="dislay=block;height: 250px;"></div>
+                </div>
+                <div class="col-sm-2 col-md-6 col-lg-2" style="position: relative;">
+                  <div class="row">
+                    <div class="col-xl-3 col-md-6 mb-2">
+                      <div class="card border-left-primary shadow h-100 py-2" style="min-width: max-content;">
+                        <div class="card-body" style="padding:5%;">
+                          <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                              <div class="text-xs font-weight-bold text-primary text-uppercase mb-1" style="font-size: .750rem;">Total no. of songs</div>
+                              <div class="h5 mb-0 font-weight-bold text-gray-800" id="Totsongs">{{ kpidata[2]}}</div>
+                            </div>
+                            <div class="col-auto">
+                              <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="w-100"></div>
+                  <div class="row">
+                    <div class="col-xl-3 col-md-6 mb-2">
+                      <div class="card border-left-primary shadow h-100 py-2" style="min-width: max-content;">
+                        <div class="card-body" style="padding:5%;">
+                          <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                              <div class="text-xs font-weight-bold text-primary text-uppercase mb-1" style="font-size: .750rem;">Total words (Unique words)</div> 
+                              <div class="h5 mb-0 font-weight-bold text-gray-800" id="Totwords">{{ kpidata[0] }}({{ kpidata[1] }})</div>
+                            </div>
+                            <div class="col-auto">
+                              <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="w-100"></div>
+                  <div class="row">
+                    <div class="col-xl-3 col-md-6 mb-2">
+                      <div class="card border-left-primary shadow h-100 py-2" style="min-width: max-content;">
+                        <div class="card-body" style="padding:5%;">
+                          <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                              <div class="text-xs font-weight-bold text-primary text-uppercase mb-1" style="font-size: .750rem;">Unique phrases</div>
+                              <div class="h5 mb-0 font-weight-bold text-gray-800" id="Uphrases">{{ kpidata[1] }}</div>
+                            </div>
+                            <div class="col-auto">
+                              <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+
+              <canvas class="my-4 w-100 chartjs-render-monitor" id="ngramChartID" width="500" height="200" style="display: block; width: 592px; height: 249px;"></canvas>
+              <canvas id="radarID" style="display: block; width: 783px; height: 391px;" width="783" height="391" class="chartjs-render-monitor"></canvas>
+              
+                
+            </main>
+          </div>
+          
+    </div>
+
+    
+  </div>
+</div>
+
+</body>
+<script type="text/javascript">
+  var ngram = document.getElementById("ngramChartID").getContext('2d');
+  var radar = document.getElementById("radarID");
+  var dashname = document.getElementById("dashID");
+  var totsongsEle = document.getElementById("Totsongs");
+  var totuniwordsEle = document.getElementById("Totwords");
+  var uphrasesEle = document.getElementById("Uphrases");
+
+
+  function loaddata(vars){
+    return vars
+  }
+  var utils = Samples.utils;
+
+  utils.srand(110);
+  
+  function getRandomColor(solid, opacity) {
+    function hexToRgb(hex) {
+      var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : null;
+    }
+
+    var letters = '0123456789ABCDEF';
+    var color = '#';
+    for (var i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    var colour = hexToRgb(String(color));
+    var solid_colour = 'rgba(' + String(colour.r) + ',' + String(colour.g) + ',' + String(colour.b) + ',' + '0.8' + ')';  
+    var opacity_colour = 'rgba(' + String(colour.r) + ',' + String(colour.g) + ',' + String(colour.b) + ',' + '0.2' + ')';  
+
+    return {solid: solid_colour, opacity: opacity_colour};
+  }
+
+  var random_colour = getRandomColor();
+
+  var ngdata = loaddata({{data|tojson}});
+  var ngramData = { 
+                    labels: ngdata.labels,
+                    datasets: [{
+                      label: ngdata.artistname,
+                      backgroundColor: random_colour.opacity,
+                      borderColor: random_colour.solid,
+                      data: ngdata.data
+                    }]
+                  }
+  var NgramChart = new Chart(ngram, {
+      type: 'line',
+      data:ngramData, 
+      // {
+      //     labels: ngramdata.labels,
+      //     datasets: [{
+      //         backgroundColor: 'rgb(255, 99, 132,0.2)',
+      //         borderColor: 'rgb(255, 99, 132)',
+      //         data: ngramdata.data
+      //     }]
+      // },
+
+      // Configuration options go here
+      options: {
+			  elements: {
+          line: {
+            backgroundColor: random_colour.opacity,
+            borderColor: random_colour.solid,
+          },
+          point: {
+            backgroundColor: random_colour.solid,
+            radius: 5,
+            hoverRadius: 10,
+          }
+        }
+      }
+    });
+  var radarjson = loaddata({{radarData|tojson}});
+  var radarData = { 
+                    labels: radarjson.labels,
+                    datasets: [{
+                      label: radarjson.artistname,
+                      backgroundColor: random_colour.opacity,
+                      borderColor: random_colour.solid,
+                      data: radarjson.datasets[0].data
+                    }]
+                  }
+
+  var GenreRadar = new Chart(radar, {
+      type: 'radar',
+      data: radarData,
+      options: {
+        tooltips: true,
+        elements: {
+          line: {
+            backgroundColor: random_colour.opacity,
+            borderColor: random_colour.solid,
+          },
+          point: {
+            backgroundColor: random_colour.solid,
+            radius: 5,
+            hoverRadius: 10,
+          }
+        }
+      }
+  });
+
+  am4core.ready(function() {
+
+    // Themes begin
+    am4core.useTheme(am4themes_animated);
+    // Themes end
+
+
+    var chart = am4core.create("cloud", am4plugins_wordCloud.WordCloud);
+    var series = chart.series.push(new am4plugins_wordCloud.WordCloudSeries());
+
+    series.accuracy = 4;
+    series.step = 15;
+    series.rotationThreshold = 0.7;
+    series.maxCount = 200;
+    series.minWordLength = 2;
+    series.labels.template.tooltipText = "{word}: {value}";
+    series.fontFamily = "Courier New";
+    series.maxFontSize = am4core.percent(30);
+
+    series.text = "{{ clouddata }}"; 
+
+    }); // end am4core.ready()
+    // console.log("{{ clouddata }}");
+
+    var SimArtistCard = document.getElementById('SimArtistCard');
+    var addArtist = document.getElementById('searchbar');
+    
+    $("#addArtistID").click(function(){
+      $('#searchID').tooltip('hide');
+
+      var data = addArtist.value;
+      $.ajax({
+        type : 'GET',
+        url : "http://localhost:8080" + "/AddData",
+        data : data,
+        success: function(add_data){
+          
+          out_data = add_data;
+
+          dashname.value = out_data.ga[0]; 
+
+          //radar chart
+          for(let i; i < out_data.radarData.length;i++){
+            random_colour = getRandomColor();
+
+            addradardata = {
+                label: data[i].artistname,
+                backgroundColor: random_colour.opacity,
+                borderColor: random_colour.solid,
+                data: data[i].datasets[0].data
+            }
+
+            GenreRadar.data.datasets.push(addradardata); 
+          }
+
+          //word cloud
+          var series = chart.series.push(new am4plugins_wordCloud.WordCloudSeries());
+
+          series.accuracy = 4;
+          series.step = 15;
+          series.rotationThreshold = 0.7;
+          series.maxCount = 200;
+          series.minWordLength = 2;
+          series.labels.template.tooltipText = "{word}: {value}";
+          series.fontFamily = "Courier New";
+          series.maxFontSize = am4core.percent(30);
+
+          series.text = out_data.clouddata; 
+
+          });
+          //KPI
+          var kpidata = out_data.kpi_data
+          totuniwordsEle.value = String(kpidata[0]) + ' (' + String(kpidata[1]) + ')';
+          uphrasesEle.value = kpidata[2];
+          totsongsEle.value = kpidata[3];
+          
+          GenreRadar.update();
+            
+        },
+        error: function (error) {
+            console.log("ERROR");
+            console.log(error);
+            // $('[data-toggle="tooltip"]').tooltip();
+            $('#searchID').tooltip({'trigger':'manual', 'title': 'Artist or Genre not found'}).tooltip('show');
+        },
+        dataType: "json",
+        contentType: 'application/json;charset=UTF-8',
+      });
+    });
+
+    function onclickFunction(){
+      $.ajax({
+        type : 'POST',
+        url : "http://localhost:8080" + "/viewD2VG",
+        data: '{{ ga }}',
+        success: function(data){
+          // console.log(data);
+        },
+        
+        error: function (error) {
+            console.log("ERROR");
+            console.log(error);
+        }
+      });
+      return false;
+    }
+    
+    if ( window.history.replaceState ) {
+        window.history.replaceState( null, null, window.location.href );
+    }
+    
+
+function updateKPIvalues(arr){
+  var totwords;
+  var uwords;
+  var uphrases;
+  var totsongs;
+
+  for(let i = 0; i < length(arr); i++){
+    totwords += arr[i][0];
+    uwords += arr[i][1];
+    uphrases += arr[i][2];
+    totsongs += arr[i][3];
+
+  }
+  totsongsEle.value = totsongs;
+  totuniwordsEle.value = String(totwords) + ' (' + String(uphrases) + ')';
+  uphrasesEle.value = uphrases;
+
+}
+
+function testfunc(){
+  console.log("{{ clouddata }}");
+}
+</script>
+</html>
