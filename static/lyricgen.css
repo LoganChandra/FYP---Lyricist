@@ -4,7 +4,9 @@ html, body, h1, h2, h3, h4, h5, h6, p, li, ol, ul, pre {
 	padding: 0;
 }
 html, body { min-height: 100%; }
-
+html {
+	scroll-behavior: smooth;
+  }
 /* body {
 	/* background-color: #345;
 	background-image: linear-gradient(to bottom, #0009, transparent);
@@ -21,13 +23,12 @@ code {
 	padding: .2em .4em;
 }
 .genButton{
-	color: #9ab;
-	padding: .75em;
+	color: dark;
 	text-align: center;
 	text-decoration: none;
-	transition: all .5s;
+	/* transition: all .5s; */
 	z-index: -1;
-	position:relative;
+	position: absolute;;
 }
 .content {
 	background-color: #fff;
@@ -138,3 +139,13 @@ code {
 .links > a:nth-of-type(9):hover ~ .line { --index: 9; }
 .links > a:nth-of-type(10):hover ~ .line { --index: 10; }
 .links > a:last-of-type:hover ~ .line { --index: var(--items); }
+
+.genrelist{
+	padding-top: 10%;
+}
+button:active {
+	background-color: yellow;
+  }
+.selected > button {
+	
+}

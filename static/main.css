@@ -9,6 +9,7 @@ canvas{
 html {
     background:  url(http://upload.wikimedia.org/wikipedia/commons/d/dd/Muybridge_race_horse_animated.gif) no-repeat center center fixed; 
     background-size: cover;
+    scroll-behavior: smooth;
   }
 
 /* 
