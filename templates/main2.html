@@ -39,6 +39,7 @@
   </head>
   <body id="page-top">
     <!-- Navigation -->
+    <div style="background-color: rgb(0,0,0,0.5)!important;">
     <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
       <div class="container">
         <h1 class="js-scroll-trigger" href="/main">Lyricist</h1>
@@ -55,7 +56,7 @@
         </div>
       </div>
     </nav>
-  
+  </div>
     <!-- Header -->
     <header class="masthead">
       <div class="container d-flex h-100 align-items-center">
@@ -63,9 +64,9 @@
           <h1 class="mx-auto my-0 text-uppercase">Lyricist</h1>
           <h2 class="text-white-50 mx-auto mt-2 mb-5">Explore music through the eyes of a lyricist.</h2>
           <form action="/explore" method="post" style="width: 100%;">
-            <input name="getsearch" type="text" placeholder="Search for genre or artist..." class="form-control flex-fill mr-0 mr-sm-2 mb-3 mb-sm-0">
-            <input type="submit" value="Get started" class="btn btn-primary js-scroll-trigger" id="beginbutton">
-
+            <input name="getsearch" type="text" placeholder="Search for an artist..." class="form-control flex-fill mr-0 mr-sm-2 mb-3 mb-sm-0">
+            <input type="submit" value="Get started" class="btn btn-primary js-scroll-trigger" id="beginbutton" style="margin: auto;margin-top: 10px;background-color: rgb(0,0,0,0.2);text-decoration-color: black;">
+                    
             {% if error %}
               <p>{{ error }}</p>
             {% endif %}
@@ -74,16 +75,70 @@
       </div>
     </header>
   
-    <!-- About Section -->
-    <section id="about" class="about-section text-center">
+  <!-- About Section -->
+  <section id="about" class="about-section text-center" style="padding:5em">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-8 mx-auto">
+          <h2 class="text-white mb-4">Welcome to Lyricist</h2>
+          <p class="text-white-50">Lyricist is a platform that allows you to explore trends in lyrics behind your favourite artists and genres with the help of data visualizations.</p>
+        </div>
+      </div>
+      <img src="img/ipad.png" class="img-fluid" alt="">
+    </div>
+  </section>
+    <section id="projects" class="projects-section bg-light" style="display: inline;">
       <div class="container">
-        <div class="row">
-          <div class="col-lg-8 mx-auto">
-            <h2 class="text-white mb-4">About Lyricist</h2>
-            <p class="text-white-50">Lyricist is a platform that allows you to explore the lyrics behind your favourite artists and genres with the help of data visualizations and AI.</p>
+  
+        <!-- Featured Project Row -->
+        <div class="row align-items-center no-gutters mb-4 mb-lg-5" style="margin-top: 20px;">
+          <div class="col-xl-8 col-lg-7">
+            <img class="img-fluid mb-3 mb-lg-0" src="{{ url_for('static',filename='img/smarteranalysis.jpg') }}" alt="">
+          </div>
+          <div class="col-xl-4 col-lg-5">
+            <div class="featured-text text-center text-lg-left">
+              <h4>Built with Machine Learning and AI</h4>
+              <p class="text-black-50 mb-0">Search your favourite artist in the search bar above and sit back while Machine Learning works its magic to do the heavy lifting so you don't have to.</p>
+            </div>
           </div>
         </div>
-        <!-- <img src="{{ url_for('static',filename='img/ipad.png') }}" class="img-fluid" alt=""> -->
+  
+        <!-- Project One Row -->
+        <div class="row justify-content-center no-gutters mb-5 mb-lg-0">
+          <div class="col-lg-6">
+            <img class="img-fluid" src="{{ url_for('static',filename='img/lyricgen_pic.jpg') }}" alt="">
+          </div>
+          <div class="col-lg-6">
+            <div class="bg-black text-center h-100 project">
+              <div class="d-flex h-100">
+                <div class="project-text w-100 my-auto text-center text-lg-left">
+                  <h4 class="text-white">AI Powered Lyric Generation</h4>
+                  <p class="mb-0 text-white-50">Lyricist features a AI powered lyric generation system that mimics artists from your favourite genres.</p>
+                  <hr class="d-none d-lg-block mb-0 ml-0">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+  
+        <!-- Project Two Row -->
+        <div class="row justify-content-center no-gutters">
+          <div class="col-lg-6">
+            <img class="img-fluid" src="{{ url_for('static',filename='img/d2v_pic.jpg') }}" alt="">
+          </div>
+          <div class="col-lg-6 order-lg-first">
+            <div class="bg-black text-center h-100 project">
+              <div class="d-flex h-100">
+                <div class="project-text w-100 my-auto text-center text-lg-right">
+                  <h4 class="text-white">3D Interactive Force Graph</h4>
+                  <p class="mb-0 text-white-50">The 3D force graph uses a machine learning technique called Doc2Vec that compares artist's across various genres based on their lyrics.</p>
+                  <hr class="d-none d-lg-block mb-0 mr-0">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+  
       </div>
     </section>
     <!-- Contact Section
