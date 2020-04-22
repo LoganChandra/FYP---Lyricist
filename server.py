@@ -28,9 +28,9 @@ from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 
 
-from flask import Flask, render_template, request, jsonify, url_for, redirect
+from flask import Flask, render_template, request, jsonify, url_for, redirect, make_response
 from flask_sqlalchemy import SQLAlchemy
-# rule = request.url_rule
+from flask import request
 
 # import tensorflow as tf
 import tensorflow.compat.v1 as tf
@@ -60,6 +60,8 @@ d2v_model = Doc2Vec.load(sim_artist_d2v_path)
 d2v_path = os.path.join(SITE_ROOT, "model\D2V", "d2v_20artists_3dfg.json")
 d2v_graph_path = os.path.join(SITE_ROOT, "model\D2V", "d2v_20artists_active.json")
 ag_dict_path = os.path.join(SITE_ROOT, "model\D2V", "ag_dict.json")
+tsne_path = os.path.join(SITE_ROOT, "model\D2V", "tsne_d2v_df.csv")
+tsne_d2v_df = pd.read_csv(tsne_path)
 
 ga_list = []
 
@@ -71,13 +73,23 @@ class ga_class:
         self.radar_data = -1
         self.kpidata = -1
         self.clouddata = -1
+        self.labeldata = -1
         self.addga()
 
     def addga(self):
-        ga = self.ga_inp
-        self.radar_data = getRadarData([getProperName(ga)])
-        self.kpidata = getKPIData([getProperName(ga)])
-        self.clouddata = getclouddata([getProperName(ga)])
+        global ga_list
+        ga = getProperName(self.ga_inp)
+        self.radar_data = getRadarData(ga)
+        self.kpidata = getKPIData(ga)
+        self.labeldata = getLabelsData(50, ga)
+        self.clouddata = getclouddata(ga)
+        ga_list.append(self)
+
+    # def delga(self):
+    #     global ga_list
+    #     for ele in ga_list:
+    #         if ele.ga_inp == self.ga_inp:
+    #             ga_list.remove(ele)
 
 with open(ag_dict_path) as json_file:
     ag_dict = json.load(json_file)
@@ -218,60 +230,79 @@ def GenerateLyrics(global_LyricGenInst, n_words, diversity=0.2):
 
 def checkValid(inp):
     # print("Entering `checkValid`")
-    out = shorten(inp) in list(map(shorten, check)) + list(map(shorten, list(master_csv.artist.unique())))
+    out = shorten(inp) in list(map(shorten, list(master_csv.artist.unique())))
     # print("Exiting `checkValid`")
     return out
-
+    
 def isGenre(inp):
     return checkValid(inp) and (shorten(inp) in list(map(shorten, check)))
 
 def isArtist(inp):
     return checkValid(inp) and (not isGenre(inp))
 
+app.route('/getProperName', methods = ['POST','GET'])
 def getProperName(inp):
+    # inp = 'frankzappa'
+    # print("TIS IS IT")
+    temp_master_csv_list = list(master_csv.artist.unique())
+
+    short = shorten(inp)
+    try:
+        if isGenre(short):
+            return check[list(map(shorten, check)).index(shorten(short))]
+        else:   
+            return temp_master_csv_list[list(map(shorten, temp_master_csv_list)).index(shorten(short))]
+    except:
+        return -1 
+
+    
+
+@app.route('/getRecordName', methods=['POST','GET'])
+def getRecordName():
+    # inp = 'frankzappa'
+    inp = request.get_data(as_text=True)
+    print(inp)
     temp_master_csv_list = list(master_csv.artist.unique())
 
     short = shorten(inp)
     if isGenre(short):
-        return check[list(map(shorten, check)).index(shorten(short))]
+        return jsonify({'name': check[list(map(shorten, check)).index(shorten(short))]})
     else:   
-        return temp_master_csv_list[list(map(shorten, temp_master_csv_list)).index(shorten(short))]
-
+        return jsonify({'name': temp_master_csv_list[list(map(shorten, temp_master_csv_list)).index(shorten(short))]})
 
 @app.route('/')
 @app.route("/main", methods=["GET", "POST"])
 def main():
-    global ga_list
     if request.method == 'GET':
         return render_template("main2.html", error = 0)
-    ga_list.append(request.form['getsearch'])
-    d2vmodel = get3dgfmodel()
 
     # TODO add top n words functionality
     # top_n
-    return redirect(url_for('explore', ga=ga_list, d2vmodel = d2vmodel))
+    return redirect(url_for('explore', ga=request.form['getsearch']))
 
-@app.route('/explore', methods=['POST', 'GET'])
-def explore():
+@app.route('/explore', defaults={'ga': None}, methods=['POST', 'GET'])
+@app.route('/explore/<string:ga>/', methods=['POST', 'GET'])
+def explore(ga):
     global ga_list
-    ga = request.form.get('getsearch', 'Error hehe')
+    rule = request.url_rule
+
     ga_list = []
+    print(rule.rule)
+    if 'explore' in rule.rule:
+        ga = request.form.get('getsearch', 'Error hehe')
 
-    if checkValid(ga):
-        
-        temp_class = ga_class(ga)
-        data = getLabelsData(50, getProperName(ga))
-        radarData = temp_class.radar_data
-        simAD = getSimArtistData(getProperName(ga))
-        kpidata = temp_class.kpidata
-        clouddata = temp_class.clouddata
-        ga_list.append(temp_class)
-        
-        return render_template('explore2.html', ga=getProperName(ga), data=data, radarData=radarData[0], simAD = simAD, clouddata = str(clouddata), kpidata = kpidata)
-
-    else:
+    ga_p = getProperName(ga)
+    if ga_p == -1:
         error = "Genre or Artist not found"
         return render_template('main2.html', error = error)
+    else:
+        
+        ga_p = getProperName(ga)
+        temp_class = ga_class(ga_p)
+        # {'ga_name': '', 'ga': temp, 'data': getLabelsData(50, getProperName(ga_namelist[0])), 'radarData': radarlist, 'simAD': simAD, 'clouddata': clouddata, 'kpidata': [int(x) for x in kpidata]}
+        return render_template('explore2.html', ga=temp_class.ga_inp, data=temp_class.labeldata, radarData=temp_class.radar_data, simAD = getSimArtistData(ga_p), clouddata = temp_class.clouddata, kpidata = getKPIData(ga_p), glob = getvisdata(ga_p), scatterdata = getScatterData(),linedata = getAnnualLineData([ga_p]))
+
+        
 
 @app.route('/lyricgen')
 def lyricgen():
@@ -281,9 +312,9 @@ def lyricgen():
 @app.route('/getSimArtists', methods=['POST', 'GET'])
 def getSimArtistData(inp):
     # inp = 'bbking'
-    num_artists = 8
+    num_artists = 10
     if isArtist(inp):
-        similar_artists = d2v_model.docvecs.most_similar(str(getProperName(inp)), topn=num_artists)
+        similar_artists = d2v_model.docvecs.most_similar(str(inp), topn=num_artists)
         query = 'https://thumbs-prod.si-cdn.com/_oO5E4sOE9Ep-qk_kuJ945_-qo4=/800x600/filters:no_upscale()/https://public-media.si-cdn.com/filer/d5/24/d5243019-e0fc-4b3c-8cdb-48e22f38bff2/istock-183380744.jpg'
         data = {'simname': [i[0] for i in similar_artists], 'simgenre': [getGenre(i[0]) for i in similar_artists], 'simimgpath': query}
     return data
@@ -292,13 +323,37 @@ def getSimArtistData(inp):
 @app.route('/getRadarData', methods=['POST', 'GET'])
 def getRadarData(inp):
     # inp = 'beyonce'
-    res = []
-    for ele in inp:
-        if isArtist(ele):
-            data = [d2v_model.docvecs.n_similarity([ele], master_csv[master_csv['genre'] == genre]['artist'].tolist())*100 for genre in check]
-            res.append({'artistname': ele, 'labels' : check, 'datasets' : [{'data' : data}]})
-        else:
-            return 0
+    if isArtist(inp):
+        data = [d2v_model.docvecs.n_similarity([inp], master_csv[master_csv['genre'] == genre]['artist'].tolist())*100 for genre in check]
+        res = {'artistname': inp, 'labels' : check, 'datasets' : [{'data' : data}]}
+    else:
+        return 0
+    return res
+
+@app.route('/getAnnualLineData', methods=['POST', 'GET'])
+def getAnnualLineData(inp):
+
+    rule = request.url_rule
+    # inp = ['frank-zappa', 'drake']
+    if 'getAnnualLineData' in rule.rule:
+        inp = request.get_data(as_text=True)
+    data = []
+
+    temp_csv = master_csv[master_csv['artist'].isin(inp)]
+    labels = list(range(temp_csv['year'].min(),temp_csv['year'].max()))
+
+    for artist in inp:
+        artistdf = temp_csv[temp_csv['artist'] == artist]
+        tempdata = []
+        for yr in labels:
+            yr_ls = list(artistdf[artistdf['year'] == yr]['lyrics'])
+            if len(yr_ls) < 1:
+                tempdata.append('nan')
+            else:
+                tempdata.append(len(set(''.join(yr_ls).split('\n'))))
+        data.append(tempdata)
+
+    res = {'artist': inp, 'labels': labels, 'data': data}
     return res
 
 @app.route('/getRadarAddData', methods=['POST'])
@@ -313,30 +368,36 @@ def getRadarAddData():
     else:
         return False
 
-@app.route('/AddData', methods=['POST','GET'])
+@app.route('/AddData', methods=['GET','POST'])
 def AddData():
+    inp = request.get_data(as_text=True)
+    # if checkValid(inp):
     global ga_list
-    # inp = request.get_data(as_text=True)
-    inp = 'frank-zappa'
-
-    if inp not in [x for x in ga_list if x.ga_inp == inp]:
+    # inp = 'frank-zappa'
+    # inp = getProperName(inp)
+    print(str([x for x in ga_list if x.ga_inp == inp]))
+    if len([x for x in ga_list if x.ga_inp == inp]) == 0:
+        print("check list: " + str([x for x in ga_list if x.ga_inp == inp]))
         temp_class = ga_class(inp)
-        ga_list.append(temp_class)
-        res = 1
-    
-    return getvisdata()
+        res = getvisdata(inp)
+        return jsonify(res)            
+    else:
+        return "Error"
+    # else:
+    #     return "Exist"
 
-@app.route('/DelData', methods=['POST'])
+@app.route('/DelData', methods=['POST','GET'])
 def DelData():
     global ga_list
-    inp = request.get_data(as_text=True)
-    todel = [x for x in ga_list if x.ga_inp == 'inp']
+    inp = getProperName(request.get_data(as_text=True))
+    todel = [x for x in ga_list if x.ga_inp == inp]
     if len(todel) > 0:
-        res = 1
         ga_list.remove(todel[0])
+        res = getvisdata(inp)
+
     else: 
-        res = 0
-    return res
+        return False
+    return jsonify(res)
 
 # self.ga_inp = ga_inp
 #         self.radar_data = -1
@@ -344,22 +405,32 @@ def DelData():
 #         self.addga()
 
 @app.route('/getvisdata', methods=['POST'])
-def getvisdata():
-    # global ga_list
+def getvisdata(inp):
+    global ga_list
     ga_namelist = []
     radarlist = []
     kpi_list = []
+    cloudstr = ''
 
     for ele in ga_list:
         ga_namelist.append(ele.ga_inp)
         radarlist.append(ele.radar_data)
         kpi_list.append(ele.kpidata)
+        cloudstr += ' ' + ele.clouddata
 
     kpidata = list(map(sum, zip(*kpi_list)))
-    simAD = getSimArtistData(getProperName(ga_namelist[0]))
-    clouddata = getclouddata(ga_namelist)
-    res = {'ga': ', '.join(ga_namelist), 'data': getLabelsData(50, getProperName(ga_namelist[0])), 'radarData': radarlist, 'simAD': simAD, 'clouddata': str(clouddata), 'kpidata': [int(x) for x in kpidata]}
+    # simAD = getSimArtistData(getProperName(ga_namelist[0]))
+
+    # res = {'ga': json.dumps(', '.join(ga_namelist)),
+    #  'data': json.dumps(getLabelsData(50, getProperName(ga_namelist[0]))),
+    #  'radarData': json.dumps(radarlist), 
+    #  'simAD': simAD, 
+    #  'clouddata': str(clouddata), 
+    #  'kpidata': json.dumps([int(x) for x in kpidata])
+    #  }
+    res = {'ga_name': inp, 'ga': ga_namelist, 'radarData': radarlist, 'clouddata': cloudstr, 'kpidata': [int(x) for x in kpidata],'linechart': getAnnualLineData(ga_namelist)}
     return res
+    # return res
     
     # return render_template('explore2.html', ga=', '.join(ga_namelist), data=getLabelsData(50, getProperName(ga)), radarData=radarlist, simAD = simAD, clouddata = str(clouddata), kpidata = kpidata)
 
@@ -369,7 +440,7 @@ def getKPIData(inp):#most_c, inp
     
     # inp = request.get_data(as_text=True)
 
-    ga_csv = master_csv[(master_csv['genre'].isin(list(inp))) | (master_csv['artist'].isin(list(inp)))]
+    ga_csv = master_csv[master_csv['artist'] == inp]
 
     kpi_data = ga_csv['lyrics'].str.replace('\n', ' ').str.split(' ').sum()
     total_words = len(kpi_data)
@@ -385,10 +456,10 @@ def getKPIData(inp):#most_c, inp
 def getLabelsData(most_c, inp):#most_c, inp
     # most_c = 5
     # inp = "beyonce"
-    if isGenre(inp):
-        ga_csv = master_csv[master_csv['genre'] == inp]
-    else:
-        ga_csv = master_csv[master_csv['artist'] == inp]
+    # if isGenre(inp):
+    #     ga_csv = master_csv[master_csv['genre'] == inp]
+    # else:
+    ga_csv = master_csv[master_csv['artist'] == inp]
     
     ga_lyrics = [ast.literal_eval(ele) for ele in ga_csv['lyrics_list'].tolist()]
     temp = Counter(list(itertools.chain.from_iterable(ga_lyrics))).most_common(most_c)
@@ -406,11 +477,28 @@ def getLabelsData(most_c, inp):#most_c, inp
 @app.route('/getclouddata', methods=['POST', 'GET'])
 def getclouddata(inp):
     # inp = ['beyonce','eminem']
-    ga_csv = master_csv[(master_csv['genre'].isin(list(inp))) | (master_csv['artist'].isin(list(inp)))]
+    # if isArtist(inp):
+    ga_csv = master_csv[master_csv['artist'] == inp]
+    # else:
+        # ga_csv = master_csv[master_csv['genre'] == inp]
     
     ga_lyrics = [ast.literal_eval(ele) for ele in ga_csv['lyrics_list'].tolist()]
-    return ' '.join(' '.join(ele) for ele in ga_lyrics) 
     
+    return ' '.join(' '.join(ele) for ele in ga_lyrics)
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.manifold import TSNE
+
+@app.route('/getScatterData', methods=['POST', 'GET'])
+def getScatterData():# artist, n_songs
+    
+    # nrows = 100
+    labels = list(tsne_d2v_df.genre.unique())
+    data = [[{'x': tempdf[0], 'y':tempdf[1], 'artist': tempdf[2]} for tempdf in tsne_d2v_df[tsne_d2v_df['genre'] == genre].values] for genre in labels]
+
+    res = {'labels': labels, 'data': data}
+    return res
+
+
 @app.route("/get3dgfmodel", methods=["GET", "POST"])
 def get3dgfmodel():
     with open(d2v_path) as json_file:
@@ -470,7 +558,7 @@ def viewD2VG(artist):
     # similar2artist = d2v_model.docvecs.most_similar(artist, topn=5)
     # sim = [ele[0] for ele in similar2artist]
     
-    vis1_tag = 'Most similar artists to ' + str(artist) + ' from each genre'
+    vis1_tag = 'Most similar artists to ' + str(artist) + ' from each genre' 
     graphdata.addNode(vis1_tag, str(vis1_tag), getGenre(artist))
     for sa in ag_dict.keys():
         graphdata.addNode(str(sa) + '_id', str(sa), sa)
@@ -495,7 +583,7 @@ def viewD2VG(artist):
 
 class LyricGenClass:
     def __init__(self, genre):
-
+        
         self.genre = genre
         self.model_file = "No model file"
         self.word_to_index = "No word to index"
@@ -515,7 +603,7 @@ class LyricGenClass:
             "Pop": os.path.join(SITE_ROOT, "model\Lyric Generation\lyricgen_models", "Pop_500songs_5sl_100_100_100_vsize.h5"),
             "Hip-Hop": os.path.join(SITE_ROOT, "model\Lyric Generation\lyricgen_models", "Hip-Hop_1000songs_5sl_100_100_100_vsize.h5"),
             "Rock": os.path.join(SITE_ROOT, "model\Lyric Generation\lyricgen_models", "Rock_1000songs_5sl_100_100_100_vsize.h5"),
-            "Metal": os.path.join(SITE_ROOT, "model\Lyric Generation\lyricgen_models", "Metal_100songs_10sl_Embedding10_LSTM512_Dropout_LSTM512_Dropout_Dense128_Dense2154test.h5"),
+            "Metal": os.path.join(SITE_ROOT, "model\Lyric Generation\lyricgen_models", "Metal_1000songs_10sl_Embedding10_LSTM100_Dropout_LSTM100_Dropout_Dense100_Dense13878test.h5"),
             "Country": os.path.join(SITE_ROOT, "model\Lyric Generation\lyricgen_models", "Country_1000songs_5sl_100_100_100_vsize.h5"),
             "Jazz": os.path.join(SITE_ROOT, "model\Lyric Generation\lyricgen_models", "Jazz_1000songs_5sl_100_100_100_vsize.h5"),
             "Electronic": os.path.join(SITE_ROOT, "model\Lyric Generation\lyricgen_models", "Electronic_1000songs_5sl_100_100_100_vsize.h5"),
@@ -524,7 +612,7 @@ class LyricGenClass:
             "Indie": os.path.join(SITE_ROOT, "model\Lyric Generation\lyricgen_models", "Indie_1000songs_5sl_100_100_100_vsize.h5")
         }
         genre_file = self.genre
-        model_url = switcher.get(genre_file, os.path.join(SITE_ROOT, "model\Lyric Generation\lyricgen_models", "Metal_100songs_10sl_Embedding10_LSTM512_Dropout_LSTM512_Dropout_Dense128_Dense2154test.h5"))
+        model_url = switcher.get(genre_file, os.path.join(SITE_ROOT, "model\Lyric Generation\lyricgen_models", "Metal_1000songs_10sl_Embedding10_LSTM100_Dropout_LSTM100_Dropout_Dense100_Dense13878test.h5"))
         self.model_file = model_url
         genre_filepath = os.path.join(SITE_ROOT, "model\Lyric Generation\lyric data\Lyrics_by_genre", genre_file + ".csv")
 
